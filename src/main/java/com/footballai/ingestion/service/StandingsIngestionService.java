@@ -1,6 +1,7 @@
 package com.footballai.ingestion.service;
 
 import com.footballai.ingestion.client.ApiFootballClient;
+import com.footballai.ingestion.config.IngestionProperties;
 import com.footballai.ingestion.entity.RawApiResponse;
 import com.footballai.ingestion.repository.RawApiResponseRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class StandingsIngestionService {
 
     private final ApiFootballClient apiFootballClient;
     private final RawApiResponseRepository rawApiResponseRepository;
+    private final IngestionProperties properties;
 
     public void ingestStandings(Integer league, Integer season) {
     	
@@ -29,7 +31,7 @@ public class StandingsIngestionService {
     	                        requestParams
     	                );
 
-    	if (exists) {
+    	if (exists && !properties.isLiveSeason(season)) {
 
     	    log.info("Standings raw already exists {}",
     	            requestParams);

@@ -45,13 +45,18 @@ public class ApiFootballClient {
                 .body(String.class);
     }
 
-    public String getOdds(Integer league, Integer season) {
+    public String getOdds(
+            Integer league,
+            Integer season,
+            Integer page
+    ) {
 
         return apiFootballRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/odds")
                         .queryParam("league", league)
                         .queryParam("season", season)
+                        .queryParam("page", page)
                         .build())
                 .retrieve()
                 .body(String.class);

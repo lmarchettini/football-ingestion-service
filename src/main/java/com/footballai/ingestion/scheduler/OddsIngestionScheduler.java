@@ -1,12 +1,13 @@
 package com.footballai.ingestion.scheduler;
 
-import com.footballai.ingestion.config.IngestionProperties;
-import com.footballai.ingestion.service.OddsIngestionService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import com.footballai.ingestion.config.IngestionProperties;
+import com.footballai.ingestion.service.OddsIngestionService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
@@ -18,18 +19,30 @@ public class OddsIngestionScheduler {
 
     @Scheduled(cron = "${football.ingestion.cron.odds}")
     public void ingestOdds() {
-    	
-    	log.info("Running odds scheduler");
 
-    	for (Integer league : ingestionProperties.getLeagues()) {
+        log.info("Running odds scheduler");
 
-    	    for (Integer season : ingestionProperties.getSeasons()) {
+        for (Integer league
+                : ingestionProperties.getLeagues()) {
 
-    	        oddsIngestionService.ingestOdds(
-    	                league,
-    	                season
-    	        );
-    	    }
-    	}
+            for (Integer season
+                    : ingestionProperties.getSeasons()) {
+
+                try {
+                    oddsIngestionService.ingestOdds(
+                            league,
+                            season
+                    );
+
+                } catch (Exception e) {
+                    log.error(
+                            "Failed odds ingestion league={} season={}",
+                            league,
+                            season,
+                            e
+                    );
+                }
+            }
+        }
     }
 }

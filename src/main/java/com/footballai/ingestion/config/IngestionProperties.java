@@ -16,6 +16,21 @@ public class IngestionProperties {
     private Cron cron;
     
     private Integer statisticsBatchSize;
+    
+    private List<Integer> liveSeasons;
+
+    public List<Integer> getLiveSeasons() {
+        return liveSeasons;
+    }
+
+    public void setLiveSeasons(List<Integer> liveSeasons) {
+        this.liveSeasons = liveSeasons;
+    }
+
+    public boolean isLiveSeason(Integer season) {
+        return liveSeasons != null
+                && liveSeasons.contains(season);
+    }
 
     public Integer getStatisticsBatchSize() {
         return statisticsBatchSize;

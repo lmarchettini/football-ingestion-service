@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import com.footballai.ingestion.client.ApiFootballClient;
+import com.footballai.ingestion.config.IngestionProperties;
 import com.footballai.ingestion.entity.RawApiResponse;
 import com.footballai.ingestion.repository.RawApiResponseRepository;
 
@@ -18,26 +19,28 @@ public class FixturesIngestionService {
 
     private final ApiFootballClient apiFootballClient;
     private final RawApiResponseRepository rawApiResponseRepository;
+    private final IngestionProperties properties;
 
     public void ingestFixtures(Integer league, Integer season) {
     	
     	String requestParams =
                 "league=" + league + "&season=" + season;
 
-        boolean exists =
-                rawApiResponseRepository
-                        .existsByEndpointAndRequestParams(
-                                "/fixtures",
-                                requestParams
-                        );
+    	boolean exists =
+    	        rawApiResponseRepository
+    	                .existsByEndpointAndRequestParams(
+    	                        "/fixtures",
+    	                        requestParams
+    	                );
 
-        if (exists) {
+    	if (exists && !properties.isLiveSeason(season)) {
+    	    log.info(
+    	            "Fixtures raw already exists {}",
+    	            requestParams
+    	    );
 
-            log.info("Fixtures raw already exists {}",
-                    requestParams);
-
-            return;
-        }
+    	    return;
+    	}
 
         log.info("Starting fixtures ingestion league={} season={}",
                 league,
