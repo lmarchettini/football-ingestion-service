@@ -19,65 +19,92 @@ import java.util.List;
 @Slf4j
 public class FixtureStatisticsIngestionService {
 
-    private final FixtureRepository fixtureRepository;
-    private final ApiFootballClient apiFootballClient;
-    private final RawApiResponseRepository rawApiResponseRepository;
-    private final IngestionProperties properties;
+	private final FixtureRepository fixtureRepository;
+	private final ApiFootballClient apiFootballClient;
+	private final RawApiResponseRepository rawApiResponseRepository;
+	private final IngestionProperties properties;
 
-    public void ingestFixtureStatistics() {
+	public void ingestFixtureStatistics() {
 
-        List<Fixture> fixtures =
-                fixtureRepository.findFixturesWithoutStatisticsRaw(
-                        PageRequest.of(
-                                0,
-                                properties.getStatisticsBatchSize()
-                        )
-                );
+		List<Fixture> fixtures = fixtureRepository
+				.findFixturesWithoutStatisticsRaw(PageRequest.of(0, properties.getStatisticsBatchSize()));
 
-        log.info(
-                "Found {} fixtures without statistics raw",
-                fixtures.size()
-        );
+		log.info("Found {} fixtures without statistics raw", fixtures.size());
 
-        for (Fixture fixture : fixtures) {
+		for (Fixture fixture : fixtures) {
 
-            try {
-                String requestParams = "fixture=" + fixture.getId();
+			try {
+				String requestParams = "fixture=" + fixture.getId();
 
-                if (rawApiResponseRepository.existsByEndpointAndRequestParams(
-                        "/fixtures/statistics",
-                        requestParams
-                )) {
-                    continue;
-                }
+				if (rawApiResponseRepository.existsByEndpointAndRequestParams("/fixtures/statistics", requestParams)) {
+					continue;
+				}
 
-                String responseJson =
-                        apiFootballClient.getFixtureStatistics(fixture.getId());
+				String responseJson = apiFootballClient.getFixtureStatistics(fixture.getId());
 
-                RawApiResponse raw =
-                        RawApiResponse.builder()
-                                .endpoint("/fixtures/statistics")
-                                .requestParams(requestParams)
-                                .responseJson(responseJson)
-                                .processed(false)
-                                .processingStatus("PENDING")
-                                .fetchedAt(LocalDateTime.now())
-                                .build();
+				RawApiResponse raw = RawApiResponse.builder().endpoint("/fixtures/statistics")
+						.requestParams(requestParams).responseJson(responseJson).processed(false)
+						.processingStatus("PENDING").fetchedAt(LocalDateTime.now()).build();
 
-                rawApiResponseRepository.save(raw);
+				rawApiResponseRepository.save(raw);
 
-                log.info("Saved statistics raw fixtureId={}", fixture.getId());
+				log.info("Saved statistics raw fixtureId={}", fixture.getId());
 
-                Thread.sleep(500); // circa 120 richieste/minuto
+				Thread.sleep(500); // circa 120 richieste/minuto
 
-            } catch (Exception e) {
-                log.error(
-                        "Failed statistics raw fixtureId={}",
-                        fixture.getId(),
-                        e
-                );
-                break;
-            }
-        }
-    }
+			} catch (Exception e) {
+				log.error("Failed statistics raw fixtureId={}", fixture.getId(), e);
+				break;
+			}
+		}
+	}
+
+	public int ingestFixtureStatistics(Integer requestedBatchSize) {
+
+		int batchSize = requestedBatchSize != null ? requestedBatchSize : properties.getStatisticsBatchSize();
+
+		List<Fixture> fixtures = fixtureRepository.findFixturesWithoutStatisticsRaw(PageRequest.of(0, batchSize));
+
+		log.info("Found {} fixtures without statistics raw", fixtures.size());
+
+		int saved = 0;
+
+		for (Fixture fixture : fixtures) {
+
+			try {
+				String requestParams = "fixture=" + fixture.getId();
+
+				if (rawApiResponseRepository.existsByEndpointAndRequestParams("/fixtures/statistics", requestParams)) {
+					continue;
+				}
+
+				String responseJson = apiFootballClient.getFixtureStatistics(fixture.getId());
+
+				RawApiResponse raw = RawApiResponse.builder().endpoint("/fixtures/statistics")
+						.requestParams(requestParams).responseJson(responseJson).processed(false)
+						.processingStatus("PENDING").fetchedAt(LocalDateTime.now()).source("API_FOOTBALL")
+						.httpStatus(200).build();
+
+				rawApiResponseRepository.save(raw);
+
+				saved++;
+
+				log.info("Saved statistics raw fixtureId={}", fixture.getId());
+
+				Thread.sleep(500);
+
+			} catch (InterruptedException exception) {
+
+				Thread.currentThread().interrupt();
+
+				throw new IllegalStateException("Statistics ingestion interrupted", exception);
+
+			} catch (Exception exception) {
+
+				log.error("Failed statistics raw fixtureId={}", fixture.getId(), exception);
+			}
+		}
+
+		return saved;
+	}
 }

@@ -12,7 +12,7 @@ public interface FixtureRepository extends JpaRepository<Fixture, Long> {
     @Query("""
         SELECT f
         FROM Fixture f
-        WHERE f.status = 'FT'
+        WHERE f.status IN ('FT', 'AET', 'PEN')
           AND NOT EXISTS (
               SELECT 1
               FROM RawApiResponse r

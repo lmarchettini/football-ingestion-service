@@ -1,5 +1,6 @@
 package com.footballai.ingestion.scheduler;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(
+        prefix = "football.ingestion.scheduling",
+        name = "enabled",
+        havingValue = "true"
+)
 public class OddsIngestionScheduler {
 
     private final OddsIngestionService oddsIngestionService;
